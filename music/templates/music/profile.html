@@ -1,0 +1,71 @@
+{% extends 'music/base.html' %}
+
+{% block title %}My Profile - Digital Jukebox{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px;">👤 My Profile</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-bottom: 30px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
+        <div style="font-size: 4em; margin-bottom: 15px;">👤</div>
+        <h3 style="margin-bottom: 10px;">{{ user.first_name }} {{ user.last_name }}</h3>
+        <p style="opacity: 0.9; margin-bottom: 5px;">@{{ user.username }}</p>
+        <p style="opacity: 0.8; font-size: 0.9em;">{{ user.email }}</p>
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.3);">
+            <p style="font-size: 0.9em; opacity: 0.9;">Member since</p>
+            <p style="font-weight: bold;">{{ user.date_joined|date:"M d, Y" }}</p>
+        </div>
+    </div>
+    
+    <div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                <h3 style="font-size: 2em; color: #667eea; margin-bottom: 5px;">{{ user_playlists.count }}</h3>
+                <p style="color: #666;">Playlists</p>
+            </div>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                <h3 style="font-size: 2em; color: #667eea; margin-bottom: 5px;">{{ total_plays }}</h3>
+                <p style="color: #666;">Total Plays</p>
+            </div>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                <h3 style="font-size: 2em; color: #667eea; margin-bottom: 5px;">{{ top_songs.count }}</h3>
+                <p style="color: #666;">Favorites</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 15px;">🎵 My Top Songs</h3>
+        <div style="display: grid; gap: 10px;">
+            {% for song in top_songs %}
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #333; margin-bottom: 5px;">{{ song.title }}</h4>
+                <p style="color: #666; font-size: 0.9em;">{{ song.album.artist.artist_name }}</p>
+                <span style="background: #667eea; color: white; padding: 3px 10px; border-radius: 5px; font-size: 0.85em;">
+                    {{ song.play_count }} plays
+                </span>
+            </div>
+            {% empty %}
+            <p style="color: #999; text-align: center; padding: 20px;">No songs played yet</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 15px;">⏱️ Recent Plays</h3>
+        <div style="display: grid; gap: 10px;">
+            {% for play in recent_plays %}
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #333; margin-bottom: 5px;">{{ play.song.title }}</h4>
+                <p style="color: #666; font-size: 0.9em;">{{ play.song.album.artist.artist_name }}</p>
+                <p style="color: #999; font-size: 0.85em;">{{ play.played_at|timesince }} ago</p>
+            </div>
+            {% empty %}
+            <p style="color: #999; text-align: center; padding: 20px;">No recent plays</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

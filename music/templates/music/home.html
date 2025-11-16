@@ -1,0 +1,53 @@
+{% extends 'music/base.html' %}
+
+{% block title %}Home - Digital Jukebox{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ total_songs }}</h3>
+        <p>Total Songs</p>
+    </div>
+</div>
+
+<h2 style="color: #667eea; margin-bottom: 20px;">🎶 Welcome to Digital Jukebox</h2>
+
+<div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+    <p style="font-size: 1.1em; line-height: 1.6; color: #333;">
+        Welcome to your personal digital jukebox! Browse through our collection of 
+        {{ total_songs }} songs, create custom playlists, and discover your next favorite track.
+    </p>
+</div>
+
+<h3 style="color: #667eea; margin-bottom: 20px;">Recent Songs</h3>
+
+<div style="display: grid; gap: 15px;">
+    {% for song in songs|slice:":10" %}
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h4 style="color: #333; margin-bottom: 5px;">{{ song.title }}</h4>
+                <p style="color: #666; font-size: 0.9em;">
+                    {{ song.album.artist.artist_name }} • {{ song.album.album_name }}
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <span style="background: #667eea; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.85em;">
+                    {{ song.genre }}
+                </span>
+                <p style="color: #999; font-size: 0.85em; margin-top: 5px;">
+                    {{ song.duration|floatformat:0 }}s
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+    <a href="{% url 'music:song_list' %}" 
+       style="background: #667eea; color: white; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+        View All Songs →
+    </a>
+</div>
+{% endblock %}

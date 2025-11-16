@@ -1,0 +1,42 @@
+{% extends 'music/base.html' %}
+
+{% block title %}Top Songs - Digital Jukebox{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 20px;">🏆 Top 10 Most Played Songs</h2>
+
+<div style="display: grid; gap: 15px;">
+    {% for song in top_songs %}
+    <div style="background: linear-gradient(135deg, {% if forloop.counter <= 3 %}#FFD700{% else %}#f8f9fa{% endif %} 0%, {% if forloop.counter <= 3 %}#FFA500{% else %}#e9ecef{% endif %} 100%); 
+                padding: 20px; border-radius: 10px; display: flex; align-items: center; gap: 20px;">
+        <div style="font-size: 2em; font-weight: bold; color: {% if forloop.counter <= 3 %}#fff{% else %}#667eea{% endif %}; 
+                    min-width: 50px; text-align: center;">
+            #{{ forloop.counter }}
+        </div>
+        <div style="flex: 1;">
+            <h3 style="color: {% if forloop.counter <= 3 %}#fff{% else %}#333{% endif %}; margin-bottom: 8px;">
+                {{ song.title }}
+            </h3>
+            <p style="color: {% if forloop.counter <= 3 %}rgba(255,255,255,0.9){% else %}#666{% endif %}; margin-bottom: 5px;">
+                <strong>Artist:</strong> {{ song.album.artist.artist_name }}
+            </p>
+            <p style="color: {% if forloop.counter <= 3 %}rgba(255,255,255,0.9){% else %}#666{% endif %};">
+                <strong>Album:</strong> {{ song.album.album_name }}
+            </p>
+        </div>
+        <div style="text-align: center;">
+            <div style="background: {% if forloop.counter <= 3 %}rgba(255,255,255,0.3){% else %}#667eea{% endif %}; 
+                        color: #fff; 
+                        padding: 15px; border-radius: 10px; min-width: 100px;">
+                <div style="font-size: 1.8em; font-weight: bold;">{{ song.play_count }}</div>
+                <div style="font-size: 0.85em; opacity: 0.9;">plays</div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; padding: 40px; color: #999;">
+        <p style="font-size: 1.2em;">No play history available yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

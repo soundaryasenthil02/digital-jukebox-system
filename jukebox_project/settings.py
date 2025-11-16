@@ -125,3 +125,8 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+LOGIN_URL = 'music:login'
+LOGIN_REDIRECT_URL = 'music:home'
+LOGOUT_REDIRECT_URL = 'music:home'

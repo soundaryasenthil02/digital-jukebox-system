@@ -1,0 +1,66 @@
+{% extends 'music/base.html' %}
+
+{% block title %}Register - Digital Jukebox{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #667eea; text-align: center; margin-bottom: 30px;">📝 Create New Account</h2>
+    
+    <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">First Name</label>
+                    <input type="text" name="first_name" required 
+                           style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Last Name</label>
+                    <input type="text" name="last_name" required 
+                           style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Username</label>
+                <input type="text" name="username" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+                <small style="color: #666;">This will be your login username</small>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Email</label>
+                <input type="email" name="email" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Password</label>
+                <input type="password" name="password1" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+                <small style="color: #666;">At least 6 characters</small>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Confirm Password</label>
+                <input type="password" name="password2" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+            </div>
+            
+            <button type="submit" 
+                    style="width: 100%; padding: 15px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                Create Account
+            </button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="color: #666;">Already have an account? 
+                <a href="{% url 'music:login' %}" style="color: #667eea; font-weight: bold; text-decoration: none;">Login here</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

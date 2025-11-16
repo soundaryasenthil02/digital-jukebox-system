@@ -1,0 +1,62 @@
+{% extends 'music/base.html' %}
+
+{% block title %}All Songs - Digital Jukebox{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 20px;">🎵 All Songs ({{ songs.count }})</h2>
+
+<div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+    <form method="GET" style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <input type="text" name="search" placeholder="Search by title or artist..." 
+               value="{{ search_query|default:'' }}"
+               style="flex: 1; min-width: 200px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+        
+        <select name="genre" style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+            <option value="">All Genres</option>
+            {% for genre in genres %}
+            <option value="{{ genre }}" {% if genre == selected_genre %}selected{% endif %}>{{ genre }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" 
+                style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: bold;">
+            Search
+        </button>
+        
+        <a href="{% url 'music:song_list' %}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block;">
+            Clear
+        </a>
+    </form>
+</div>
+
+<div style="display: grid; gap: 15px;">
+    {% for song in songs %}
+    <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; transition: all 0.3s;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+                <h3 style="color: #333; margin-bottom: 8px;">{{ song.title }}</h3>
+                <p style="color: #666; margin-bottom: 5px;">
+                    <strong>Artist:</strong> {{ song.album.artist.artist_name }}
+                </p>
+                <p style="color: #666; margin-bottom: 5px;">
+                    <strong>Album:</strong> {{ song.album.album_name }} ({{ song.album.release_year }})
+                </p>
+                <p style="color: #666;">
+                    <strong>Genre:</strong> {{ song.genre }}
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
+                    {{ song.duration }}s
+                </span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; padding: 40px; color: #999;">
+        <p style="font-size: 1.2em;">No songs found matching your criteria.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
