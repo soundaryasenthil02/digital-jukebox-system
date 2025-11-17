@@ -1,0 +1,85 @@
+{% extends 'music/base.html' %}
+
+{% block title %}{{ playlist.playlist_name }} - Digital Jukebox{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <h2 style="color: #667eea; margin: 0;">🎵 {{ playlist.playlist_name }}</h2>
+        <p style="color: #666; margin-top: 5px;">{{ playlist_songs.count }} song{{ playlist_songs.count|pluralize }} • Created {{ playlist.created_at|date:"M d, Y" }}</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'music:edit_playlist' playlist.playlist_id %}" 
+           style="background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            ✏️ Edit
+        </a>
+        <a href="{% url 'music:delete_playlist' playlist.playlist_id %}" 
+           style="background: #dc3545; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            🗑️ Delete
+        </a>
+        <a href="{% url 'music:my_playlists' %}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            ← Back
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 20px;">Songs in Playlist</h3>
+        
+        {% if playlist_songs %}
+        <div style="display: grid; gap: 15px;">
+            {% for ps in playlist_songs %}
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                    <h4 style="color: #333; margin-bottom: 5px;">{{ ps.song.title }}</h4>
+                    <p style="color: #666; margin-bottom: 3px;">{{ ps.song.album.artist.artist_name }}</p>
+                    <p style="color: #999; font-size: 0.9em;">{{ ps.song.album.album_name }} • {{ ps.song.duration }}s</p>
+                </div>
+                <form method="POST" action="{% url 'music:remove_from_playlist' playlist.playlist_id ps.song.song_id %}">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            style="background: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;"
+                            onclick="return confirm('Remove this song from playlist?');">
+                        Remove
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+            <p style="color: #999; font-size: 1.1em;">This playlist is empty. Add songs from the right panel!</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 20px;">Add Songs</h3>
+        
+        <form method="GET" style="margin-bottom: 15px;">
+            <input type="text" name="search" placeholder="Search songs..." 
+                   value="{{ search_query|default:'' }}"
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+        </form>
+        
+        <div style="max-height: 600px; overflow-y: auto; display: grid; gap: 10px;">
+            {% for song in all_songs|slice:":20" %}
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #333; margin-bottom: 5px; font-size: 0.95em;">{{ song.title }}</h4>
+                <p style="color: #666; font-size: 0.85em; margin-bottom: 8px;">{{ song.album.artist.artist_name }}</p>
+                <form method="POST" action="{% url 'music:add_to_playlist' playlist.playlist_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="song_id" value="{{ song.song_id }}">
+                    <button type="submit" 
+                            style="width: 100%; background: #667eea; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                        + Add
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

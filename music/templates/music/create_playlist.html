@@ -1,0 +1,34 @@
+{% extends 'music/base.html' %}
+
+{% block title %}Create Playlist - Digital Jukebox{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #667eea; text-align: center; margin-bottom: 30px;">🎵 Create New Playlist</h2>
+    
+    <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Playlist Name</label>
+                <input type="text" name="playlist_name" required maxlength="100"
+                       placeholder="e.g., Road Trip Mix, Workout Energy, Study Focus"
+                       style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+                <small style="color: #666;">Give your playlist a descriptive name</small>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" 
+                        style="flex: 1; padding: 15px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 1.1em; font-weight: bold; cursor: pointer;">
+                    Create Playlist
+                </button>
+                <a href="{% url 'music:my_playlists' %}" 
+                   style="flex: 1; padding: 15px; background: #6c757d; color: white; border-radius: 5px; text-decoration: none; text-align: center; font-size: 1.1em; font-weight: bold; display: block;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'music/base.html' %}
+
+{% block title %}My Playlists - Digital Jukebox{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2 style="color: #667eea; margin: 0;">🎵 My Playlists</h2>
+    <a href="{% url 'music:create_playlist' %}" 
+       style="background: #667eea; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        + Create New Playlist
+    </a>
+</div>
+
+{% if playlists %}
+<div style="display: grid; gap: 20px;">
+    {% for playlist in playlists %}
+    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 10px; border-left: 5px solid #667eea;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+                <h3 style="color: #333; margin-bottom: 10px; font-size: 1.5em;">
+                    <a href="{% url 'music:playlist_detail' playlist.playlist_id %}" 
+                       style="color: #667eea; text-decoration: none;">
+                        {{ playlist.playlist_name }}
+                    </a>
+                </h3>
+                <p style="color: #666; margin-bottom: 8px;">
+                    <strong>{{ playlist.song_count }}</strong> song{{ playlist.song_count|pluralize }}
+                </p>
+                <p style="color: #999; font-size: 0.9em;">
+                    Created {{ playlist.created_at|timesince }} ago
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'music:playlist_detail' playlist.playlist_id %}" 
+                   style="background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                    View
+                </a>
+                <a href="{% url 'music:edit_playlist' playlist.playlist_id %}" 
+                   style="background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                    Edit
+                </a>
+                <a href="{% url 'music:delete_playlist' playlist.playlist_id %}" 
+                   style="background: #dc3545; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                    Delete
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+    <div style="font-size: 4em; margin-bottom: 20px;">🎵</div>
+    <h3 style="color: #666; margin-bottom: 15px;">No playlists yet</h3>
+    <p style="color: #999; margin-bottom: 25px;">Create your first playlist to organize your favorite songs!</p>
+    <a href="{% url 'music:create_playlist' %}" 
+       style="background: #667eea; color: white; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+        Create Your First Playlist
+    </a>
+</div>
+{% endif %}
+{% endblock %}

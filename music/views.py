@@ -8,6 +8,13 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Count
 from .models import Song, Artist, Album, PlayHistory
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.db.models import Count, Q
+from .models import Song, Artist, Album, PlayHistory, Playlist, PlaylistSong
 
 def home(request):
     """Homepage view displaying all songs"""
@@ -167,3 +174,153 @@ def profile(request):
     }
     
     return render(request, 'music/profile.html', context)
+
+@login_required
+def my_playlists(request):
+    """Display user's playlists"""
+    playlists = Playlist.objects.filter(user=request.user).annotate(
+        song_count=Count('playlistsong')
+    ).order_by('-created_at')
+    
+    context = {
+        'playlists': playlists,
+    }
+    return render(request, 'music/my_playlists.html', context)
+
+
+@login_required
+def create_playlist(request):
+    """Create new playlist"""
+    if request.method == 'POST':
+        playlist_name = request.POST.get('playlist_name')
+        
+        if not playlist_name or playlist_name.strip() == '':
+            messages.error(request, 'Playlist name cannot be empty!')
+            return render(request, 'music/create_playlist.html')
+        
+        # Check if user already has a playlist with this name
+        if Playlist.objects.filter(user=request.user, playlist_name=playlist_name).exists():
+            messages.error(request, 'You already have a playlist with this name!')
+            return render(request, 'music/create_playlist.html')
+        
+        # Create playlist
+        playlist = Playlist.objects.create(
+            playlist_name=playlist_name,
+            user=request.user
+        )
+        
+        messages.success(request, f'Playlist "{playlist_name}" created successfully!')
+        return redirect('music:playlist_detail', playlist_id=playlist.playlist_id)
+    
+    return render(request, 'music/create_playlist.html')
+
+
+@login_required
+def playlist_detail(request, playlist_id):
+    """View playlist details and songs"""
+    playlist = get_object_or_404(Playlist, playlist_id=playlist_id, user=request.user)
+    
+    playlist_songs = PlaylistSong.objects.filter(playlist=playlist).select_related(
+        'song', 'song__album', 'song__album__artist'
+    )
+    
+    # Get all songs for adding to playlist
+    all_songs = Song.objects.select_related('album', 'album__artist').all()
+    
+    # Search functionality
+    search_query = request.GET.get('search')
+    if search_query:
+        all_songs = all_songs.filter(
+            Q(title__icontains=search_query) | 
+            Q(album__artist__artist_name__icontains=search_query)
+        )
+    
+    context = {
+        'playlist': playlist,
+        'playlist_songs': playlist_songs,
+        'all_songs': all_songs,
+        'search_query': search_query,
+    }
+    return render(request, 'music/playlist_detail.html', context)
+
+
+@login_required
+def edit_playlist(request, playlist_id):
+    """Edit playlist name"""
+    playlist = get_object_or_404(Playlist, playlist_id=playlist_id, user=request.user)
+    
+    if request.method == 'POST':
+        new_name = request.POST.get('playlist_name')
+        
+        if not new_name or new_name.strip() == '':
+            messages.error(request, 'Playlist name cannot be empty!')
+            return render(request, 'music/edit_playlist.html', {'playlist': playlist})
+        
+        # Check if another playlist with this name exists
+        if Playlist.objects.filter(
+            user=request.user, 
+            playlist_name=new_name
+        ).exclude(playlist_id=playlist_id).exists():
+            messages.error(request, 'You already have a playlist with this name!')
+            return render(request, 'music/edit_playlist.html', {'playlist': playlist})
+        
+        old_name = playlist.playlist_name
+        playlist.playlist_name = new_name
+        playlist.save()
+        
+        messages.success(request, f'Playlist renamed from "{old_name}" to "{new_name}"!')
+        return redirect('music:playlist_detail', playlist_id=playlist.playlist_id)
+    
+    context = {'playlist': playlist}
+    return render(request, 'music/edit_playlist.html', context)
+
+
+@login_required
+def delete_playlist(request, playlist_id):
+    """Delete playlist"""
+    playlist = get_object_or_404(Playlist, playlist_id=playlist_id, user=request.user)
+    
+    if request.method == 'POST':
+        playlist_name = playlist.playlist_name
+        playlist.delete()
+        messages.success(request, f'Playlist "{playlist_name}" deleted successfully!')
+        return redirect('music:my_playlists')
+    
+    context = {'playlist': playlist}
+    return render(request, 'music/delete_playlist.html', context)
+
+
+@login_required
+def add_to_playlist(request, playlist_id):
+    """Add song to playlist"""
+    if request.method == 'POST':
+        playlist = get_object_or_404(Playlist, playlist_id=playlist_id, user=request.user)
+        song_id = request.POST.get('song_id')
+        song = get_object_or_404(Song, song_id=song_id)
+        
+        # Check if song already in playlist
+        if PlaylistSong.objects.filter(playlist=playlist, song=song).exists():
+            messages.warning(request, f'"{song.title}" is already in this playlist!')
+        else:
+            PlaylistSong.objects.create(playlist=playlist, song=song)
+            messages.success(request, f'Added "{song.title}" to "{playlist.playlist_name}"!')
+        
+        return redirect('music:playlist_detail', playlist_id=playlist.playlist_id)
+    
+    return redirect('music:my_playlists')
+
+
+@login_required
+def remove_from_playlist(request, playlist_id, song_id):
+    """Remove song from playlist"""
+    if request.method == 'POST':
+        playlist = get_object_or_404(Playlist, playlist_id=playlist_id, user=request.user)
+        song = get_object_or_404(Song, song_id=song_id)
+        
+        playlist_song = get_object_or_404(PlaylistSong, playlist=playlist, song=song)
+        playlist_song.delete()
+        
+        messages.success(request, f'Removed "{song.title}" from "{playlist.playlist_name}"!')
+        return redirect('music:playlist_detail', playlist_id=playlist.playlist_id)
+    
+    return redirect('music:my_playlists')
