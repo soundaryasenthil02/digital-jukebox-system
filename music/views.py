@@ -1,21 +1,13 @@
-from django.shortcuts import render
 from django.db.models import Count
-from .models import Song, Artist, Album, PlayHistory
-from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Count
-from .models import Song, Artist, Album, PlayHistory
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.contrib import messages
 from django.db.models import Count, Q
-from .models import Song, Artist, Album, PlayHistory, Playlist, PlaylistSong
+from django.http import JsonResponse
 
+from .models import Song, Artist, Album, PlayHistory, Playlist, PlaylistSong
 def home(request):
     """Homepage view displaying all songs"""
     songs = Song.objects.select_related('album', 'album__artist').all()
@@ -324,3 +316,120 @@ def remove_from_playlist(request, playlist_id, song_id):
         return redirect('music:playlist_detail', playlist_id=playlist.playlist_id)
     
     return redirect('music:my_playlists')
+
+def analytics_dashboard(request):
+    """Analytics dashboard with charts and statistics"""
+    
+    # Top 10 Most Played Songs
+    top_songs = Song.objects.annotate(
+        play_count=Count('playhistory')
+    ).order_by('-play_count')[:10]
+    
+    # Most Popular Artists (based on total plays)
+    popular_artists = Artist.objects.annotate(
+        total_plays=Count('album__song__playhistory')
+    ).order_by('-total_plays')[:10]
+    
+    # Genre Distribution
+    genre_stats = Song.objects.values('genre').annotate(
+        count=Count('song_id')
+    ).order_by('-count')
+    
+    # Play History Over Time (Last 30 days)
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    daily_plays = PlayHistory.objects.filter(
+        played_at__gte=thirty_days_ago
+    ).extra(
+        select={'day': 'DATE(played_at)'}
+    ).values('day').annotate(
+        count=Count('play_id')
+    ).order_by('day')
+    
+    # Overall Statistics
+    total_songs = Song.objects.count()
+    total_artists = Artist.objects.count()
+    total_albums = Album.objects.count()
+    total_plays = PlayHistory.objects.count()
+    total_users = User.objects.count()
+    total_playlists = Playlist.objects.count()
+    
+    # Most Active Users
+    active_users = User.objects.annotate(
+        play_count=Count('playhistory')
+    ).order_by('-play_count')[:5]
+    
+    context = {
+        'top_songs': top_songs,
+        'popular_artists': popular_artists,
+        'genre_stats': genre_stats,
+        'daily_plays': daily_plays,
+        'total_songs': total_songs,
+        'total_artists': total_artists,
+        'total_albums': total_albums,
+        'total_plays': total_plays,
+        'total_users': total_users,
+        'total_playlists': total_playlists,
+        'active_users': active_users,
+    }
+    
+    return render(request, 'music/analytics.html', context)
+
+
+def analytics_api(request):
+    """API endpoint for chart data (JSON)"""
+    chart_type = request.GET.get('type', 'top_songs')
+    
+    if chart_type == 'top_songs':
+        top_songs = Song.objects.annotate(
+            play_count=Count('playhistory')
+        ).order_by('-play_count')[:10]
+        
+        data = {
+            'labels': [song.title for song in top_songs],
+            'data': [song.play_count for song in top_songs],
+        }
+        
+    elif chart_type == 'popular_artists':
+        popular_artists = Artist.objects.annotate(
+            total_plays=Count('album__song__playhistory')
+        ).order_by('-total_plays')[:10]
+        
+        data = {
+            'labels': [artist.artist_name for artist in popular_artists],
+            'data': [artist.total_plays for artist in popular_artists],
+        }
+        
+    elif chart_type == 'genres':
+        genre_stats = Song.objects.values('genre').annotate(
+            count=Count('song_id')
+        ).order_by('-count')
+        
+        data = {
+            'labels': [item['genre'] for item in genre_stats],
+            'data': [item['count'] for item in genre_stats],
+        }
+        
+    elif chart_type == 'daily_plays':
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        daily_plays = PlayHistory.objects.filter(
+            played_at__gte=thirty_days_ago
+        ).extra(
+            select={'day': 'DATE(played_at)'}
+        ).values('day').annotate(
+            count=Count('play_id')
+        ).order_by('day')
+        
+        data = {
+            'labels': [str(item['day']) for item in daily_plays],
+            'data': [item['count'] for item in daily_plays],
+        }
+    else:
+        data = {'labels': [], 'data': []}
+    
+    return JsonResponse(data)

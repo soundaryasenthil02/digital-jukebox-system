@@ -22,4 +22,8 @@ urlpatterns = [
     path('playlists/<int:playlist_id>/delete/', views.delete_playlist, name='delete_playlist'),
     path('playlists/<int:playlist_id>/add/', views.add_to_playlist, name='add_to_playlist'),
     path('playlists/<int:playlist_id>/remove/<int:song_id>/', views.remove_from_playlist, name='remove_from_playlist'),
+
+    # Analytics URLs
+    path('analytics/', views.analytics_dashboard, name='analytics'),
+    path('api/analytics/', views.analytics_api, name='analytics_api'),
 ]

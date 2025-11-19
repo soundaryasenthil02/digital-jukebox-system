@@ -176,6 +176,7 @@
                 <a href="{% url 'music:home' %}">Home</a>
                 <a href="{% url 'music:song_list' %}">All Songs</a>
                 <a href="{% url 'music:top_songs' %}">Top Songs</a>
+                <a href="{% url 'music:analytics' %}">Analytics</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'music:my_playlists' %}">My Playlists</a>
                 <a href="{% url 'music:profile' %}">My Profile</a>
