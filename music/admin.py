@@ -1,8 +1,7 @@
 from django.contrib import admin
+from .models import Artist, Album, Song, Playlist, PlaylistSong, PlayHistory, Queue
 
 # Register your models here.
-from django.contrib import admin
-from .models import Artist, Album, Song, Playlist, PlaylistSong, PlayHistory
 
 @admin.register(Artist)
 class ArtistAdmin(admin.ModelAdmin):
@@ -42,3 +41,10 @@ class PlayHistoryAdmin(admin.ModelAdmin):
     list_display = ('play_id', 'song', 'user', 'played_at')
     list_filter = ('played_at', 'user')
     search_fields = ('song__title', 'user__username')
+
+@admin.register(Queue)
+class QueueAdmin(admin.ModelAdmin):
+    list_display = ('queue_id', 'song', 'user', 'position', 'is_playing', 'played', 'added_at')
+    list_filter = ('is_playing', 'played', 'user')
+    search_fields = ('song__title', 'user__username')
+    ordering = ('position', 'added_at')

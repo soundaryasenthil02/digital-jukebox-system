@@ -78,3 +78,21 @@ class PlayHistory(models.Model):
     
     def __str__(self):
         return f"{self.user.username} played {self.song.title}"
+    
+
+class Queue(models.Model):
+    queue_id = models.AutoField(primary_key=True)
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+    is_playing = models.BooleanField(default=False)
+    played = models.BooleanField(default=False)
+    position = models.IntegerField(default=0)
+    
+    class Meta:
+        db_table = 'queue'
+        ordering = ['position', 'added_at']
+    
+    def __str__(self):
+        status = "Playing" if self.is_playing else ("Played" if self.played else "Queued")
+        return f"{self.song.title} - {status}"
