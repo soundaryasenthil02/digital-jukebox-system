@@ -46,10 +46,14 @@
                     <strong>Genre:</strong> {{ song.genre }}
                 </p>
             </div>
-            <div style="text-align: right;">
+            <div style="text-align: right; display: flex; flex-direction: column; gap: 10px;">
                 <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
                     {{ song.duration }}s
                 </span>
+                <a href="{% url 'music:play_song' song.song_id %}" 
+                   style="background: #28a745; color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; text-align: center; font-weight: bold;">
+                    ▶️ Play
+                </a>
             </div>
         </div>
     </div>

@@ -175,6 +175,7 @@
             <div class="nav-left">
                 <a href="{% url 'music:home' %}">Home</a>
                 <a href="{% url 'music:song_list' %}">All Songs</a>
+                <a href="{% url 'music:jukebox_queue' %}">Jukebox Queue</a>
                 <a href="{% url 'music:top_songs' %}">Top Songs</a>
                 <a href="{% url 'music:analytics' %}">Analytics</a>
                 {% if user.is_authenticated %}
