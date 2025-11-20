@@ -1,13 +1,13 @@
-from django.db.models import Count
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Max
 from django.http import JsonResponse
+from django.utils import timezone
+from .models import Song, Artist, Album, PlayHistory, Playlist, PlaylistSong, Queue
 
-from .models import Song, Artist, Album, PlayHistory, Playlist, PlaylistSong
 def home(request):
     """Homepage view displaying all songs"""
     songs = Song.objects.select_related('album', 'album__artist').all()
@@ -433,3 +433,206 @@ def analytics_api(request):
         data = {'labels': [], 'data': []}
     
     return JsonResponse(data)
+
+@login_required
+def jukebox_queue(request):
+    """Display the jukebox queue and now playing"""
+    # Get currently playing song
+    now_playing = Queue.objects.filter(is_playing=True).first()
+    
+    # Get queued songs (not played, not currently playing)
+    queued_songs = Queue.objects.filter(
+        played=False, 
+        is_playing=False
+    ).select_related('song', 'song__album', 'song__album__artist', 'user')
+    
+    # Get recently played songs
+    recently_played = Queue.objects.filter(
+        played=True
+    ).select_related('song', 'song__album', 'song__album__artist', 'user').order_by('-added_at')[:10]
+    
+    # Get all songs for adding to queue
+    all_songs = Song.objects.select_related('album', 'album__artist').all()
+    
+    # Search functionality
+    search_query = request.GET.get('search')
+    if search_query:
+        all_songs = all_songs.filter(
+            Q(title__icontains=search_query) | 
+            Q(album__artist__artist_name__icontains=search_query)
+        )
+    
+    context = {
+        'now_playing': now_playing,
+        'queued_songs': queued_songs,
+        'recently_played': recently_played,
+        'all_songs': all_songs,
+        'search_query': search_query,
+        'queue_count': queued_songs.count(),
+    }
+    
+    return render(request, 'music/jukebox_queue.html', context)
+
+
+@login_required
+def add_to_queue(request):
+    """Add song to the jukebox queue"""
+    if request.method == 'POST':
+        song_id = request.POST.get('song_id')
+        song = get_object_or_404(Song, song_id=song_id)
+        
+        # Check if song is already in queue (not played)
+        if Queue.objects.filter(song=song, played=False).exists():
+            messages.warning(request, f'"{song.title}" is already in the queue!')
+        else:
+            # Get the next position
+            max_position = Queue.objects.filter(played=False).aggregate(
+                Max('position')
+            )['position__max']
+            next_position = (max_position or 0) + 1
+            
+            # Add to queue
+            Queue.objects.create(
+                song=song,
+                user=request.user,
+                position=next_position
+            )
+            
+            messages.success(request, f'Added "{song.title}" to the queue!')
+        
+        return redirect('music:jukebox_queue')
+    
+    return redirect('music:jukebox_queue')
+
+
+@login_required
+def remove_from_queue(request, queue_id):
+    """Remove song from queue"""
+    if request.method == 'POST':
+        queue_item = get_object_or_404(Queue, queue_id=queue_id)
+        
+        # Only allow user to remove their own songs or staff to remove any
+        if queue_item.user == request.user or request.user.is_staff:
+            song_title = queue_item.song.title
+            queue_item.delete()
+            
+            # Reorder positions
+            remaining_items = Queue.objects.filter(played=False, is_playing=False).order_by('position')
+            for idx, item in enumerate(remaining_items, start=1):
+                item.position = idx
+                item.save()
+            
+            messages.success(request, f'Removed "{song_title}" from queue!')
+        else:
+            messages.error(request, 'You can only remove your own songs!')
+        
+        return redirect('music:jukebox_queue')
+    
+    return redirect('music:jukebox_queue')
+
+
+@login_required
+def play_next(request):
+    """Play the next song in queue"""
+    if request.method == 'POST':
+        # Stop current song if playing
+        current = Queue.objects.filter(is_playing=True).first()
+        if current:
+            current.is_playing = False
+            current.played = True
+            current.save()
+            
+            # Record in play history
+            PlayHistory.objects.create(
+                song=current.song,
+                user=current.user
+            )
+        
+        # Get next song in queue
+        next_song = Queue.objects.filter(
+            played=False, 
+            is_playing=False
+        ).order_by('position').first()
+        
+        if next_song:
+            next_song.is_playing = True
+            next_song.save()
+            messages.success(request, f'Now playing: "{next_song.song.title}"')
+        else:
+            messages.info(request, 'Queue is empty!')
+        
+        return redirect('music:jukebox_queue')
+    
+    return redirect('music:jukebox_queue')
+
+
+@login_required
+def skip_song(request):
+    """Skip currently playing song"""
+    if request.method == 'POST':
+        current = Queue.objects.filter(is_playing=True).first()
+        
+        if current:
+            # Mark as played
+            current.is_playing = False
+            current.played = True
+            current.save()
+            
+            # Record in play history
+            PlayHistory.objects.create(
+                song=current.song,
+                user=current.user
+            )
+            
+            # Auto-play next
+            next_song = Queue.objects.filter(
+                played=False, 
+                is_playing=False
+            ).order_by('position').first()
+            
+            if next_song:
+                next_song.is_playing = True
+                next_song.save()
+                messages.success(request, f'Skipped. Now playing: "{next_song.song.title}"')
+            else:
+                messages.info(request, 'No more songs in queue!')
+        else:
+            messages.warning(request, 'No song is currently playing!')
+        
+        return redirect('music:jukebox_queue')
+    
+    return redirect('music:jukebox_queue')
+
+
+@login_required
+def clear_queue(request):
+    """Clear all songs from queue (staff only)"""
+    if request.method == 'POST':
+        if request.user.is_staff:
+            # Keep currently playing song
+            Queue.objects.filter(played=False, is_playing=False).delete()
+            messages.success(request, 'Queue cleared!')
+        else:
+            messages.error(request, 'Only staff can clear the queue!')
+        
+        return redirect('music:jukebox_queue')
+    
+    return redirect('music:jukebox_queue')
+
+
+def play_song(request, song_id):
+    """Play a song directly (add to play history)"""
+    song = get_object_or_404(Song, song_id=song_id)
+    
+    if request.user.is_authenticated:
+        # Record in play history
+        PlayHistory.objects.create(
+            song=song,
+            user=request.user
+        )
+        messages.success(request, f'Playing "{song.title}"')
+    else:
+        messages.warning(request, 'Please login to play songs!')
+    
+    # Redirect back to previous page
+    return redirect(request.META.get('HTTP_REFERER', 'music:home'))

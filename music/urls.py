@@ -26,4 +26,13 @@ urlpatterns = [
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics'),
     path('api/analytics/', views.analytics_api, name='analytics_api'),
+
+    # Jukebox Queue URLs
+    path('jukebox/', views.jukebox_queue, name='jukebox_queue'),
+    path('jukebox/add/', views.add_to_queue, name='add_to_queue'),
+    path('jukebox/remove/<int:queue_id>/', views.remove_from_queue, name='remove_from_queue'),
+    path('jukebox/play-next/', views.play_next, name='play_next'),
+    path('jukebox/skip/', views.skip_song, name='skip_song'),
+    path('jukebox/clear/', views.clear_queue, name='clear_queue'),
+    path('songs/<int:song_id>/play/', views.play_song, name='play_song'),
 ]
