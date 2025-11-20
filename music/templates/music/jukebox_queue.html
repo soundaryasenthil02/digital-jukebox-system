@@ -1,0 +1,233 @@
+{% extends 'music/base.html' %}
+
+{% block title %}Jukebox Queue - Digital Jukebox{% endblock %}
+
+{% block content %}
+<style>
+    .now-playing {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .now-playing h2 {
+        font-size: 2em;
+        margin-bottom: 10px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    .queue-controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    
+    .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary { background: #28a745; color: white; }
+    .btn-primary:hover { background: #218838; }
+    
+    .btn-warning { background: #ffc107; color: #333; }
+    .btn-warning:hover { background: #e0a800; }
+    
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    
+    .queue-item {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border-left: 5px solid #667eea;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+    }
+    
+    .queue-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateX(5px);
+    }
+    
+    .position-badge {
+        background: #667eea;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+</style>
+
+<h2 style="color: #667eea; text-align: center; margin-bottom: 30px;">🎵 Jukebox Queue</h2>
+
+<!-- Now Playing Section -->
+{% if now_playing %}
+<div class="now-playing">
+    <div style="font-size: 3em; margin-bottom: 15px;">🎵</div>
+    <h2>NOW PLAYING</h2>
+    <h3 style="font-size: 2em; margin: 15px 0;">{{ now_playing.song.title }}</h3>
+    <p style="font-size: 1.2em; opacity: 0.9;">{{ now_playing.song.album.artist.artist_name }}</p>
+    <p style="opacity: 0.8;">{{ now_playing.song.album.album_name }} • {{ now_playing.song.genre }}</p>
+    <p style="opacity: 0.8; margin-top: 10px;">Queued by: {{ now_playing.user.first_name|default:now_playing.user.username }}</p>
+    
+    <div class="queue-controls">
+        <form method="POST" action="{% url 'music:skip_song' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">⏭️ Skip Song</button>
+        </form>
+    </div>
+</div>
+{% else %}
+<div class="now-playing">
+    <div style="font-size: 3em; margin-bottom: 15px;">⏸️</div>
+    <h2>NO SONG PLAYING</h2>
+    <p style="opacity: 0.9; margin: 15px 0;">Queue is empty or paused</p>
+    
+    {% if queued_songs %}
+    <form method="POST" action="{% url 'music:play_next' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">▶️ Play Next Song</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Queue Controls -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h3 style="color: #667eea;">📋 Upcoming Queue ({{ queue_count }} songs)</h3>
+    <div style="display: flex; gap: 10px;">
+        {% if not now_playing and queued_songs %}
+        <form method="POST" action="{% url 'music:play_next' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">▶️ Start Queue</button>
+        </form>
+        {% endif %}
+        
+        {% if user.is_staff %}
+        <form method="POST" action="{% url 'music:clear_queue' %}" onsubmit="return confirm('Clear entire queue?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">🗑️ Clear Queue</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+    
+    <!-- Queue List -->
+    <div>
+        {% if queued_songs %}
+        <div>
+            {% for item in queued_songs %}
+            <div class="queue-item">
+                <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
+                    <div class="position-badge">{{ item.position }}</div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #333; margin-bottom: 5px;">{{ item.song.title }}</h4>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 3px;">
+                            {{ item.song.album.artist.artist_name }} • {{ item.song.album.album_name }}
+                        </p>
+                        <p style="color: #999; font-size: 0.85em;">
+                            Queued by {{ item.user.first_name|default:item.user.username }} • {{ item.added_at|timesince }} ago
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 5px; font-size: 0.9em;">
+                            {{ item.song.duration }}s
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    {% if item.user == user or user.is_staff %}
+                    <form method="POST" action="{% url 'music:remove_from_queue' item.queue_id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" style="padding: 8px 15px;">Remove</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+            <div style="font-size: 4em; margin-bottom: 20px;">📭</div>
+            <h3 style="color: #666; margin-bottom: 15px;">Queue is Empty</h3>
+            <p style="color: #999;">Add songs from the right panel to start the queue!</p>
+        </div>
+        {% endif %}
+        
+        <!-- Recently Played -->
+        {% if recently_played %}
+        <div style="margin-top: 40px;">
+            <h3 style="color: #667eea; margin-bottom: 20px;">⏮️ Recently Played</h3>
+            <div style="display: grid; gap: 10px;">
+                {% for item in recently_played %}
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; opacity: 0.7;">
+                    <h4 style="color: #333; margin-bottom: 5px; font-size: 0.95em;">{{ item.song.title }}</h4>
+                    <p style="color: #666; font-size: 0.85em;">
+                        {{ item.song.album.artist.artist_name }} • Played {{ item.added_at|timesince }} ago
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Add Songs Panel -->
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 15px;">➕ Add to Queue</h3>
+        
+        <form method="GET" style="margin-bottom: 15px;">
+            <input type="text" name="search" placeholder="Search songs..." 
+                   value="{{ search_query|default:'' }}"
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+        </form>
+        
+        <div style="max-height: 800px; overflow-y: auto; display: grid; gap: 10px;">
+            {% for song in all_songs|slice:":30" %}
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #333; margin-bottom: 5px; font-size: 0.95em;">{{ song.title }}</h4>
+                <p style="color: #666; font-size: 0.85em; margin-bottom: 5px;">{{ song.album.artist.artist_name }}</p>
+                <p style="color: #999; font-size: 0.8em; margin-bottom: 10px;">{{ song.album.album_name }}</p>
+                <form method="POST" action="{% url 'music:add_to_queue' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="song_id" value="{{ song.song_id }}">
+                    <button type="submit" 
+                            style="width: 100%; background: #667eea; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                        + Add to Queue
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
